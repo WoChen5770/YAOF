@@ -13,7 +13,7 @@ clone_repo() {
 }
 
 # 定义一些变量，存储仓库地址和分支名
-latest_release="$(curl -s https://github.com/openwrt/openwrt/tags | grep -Eo "v[0-9\.]+\-*r*c*[0-9]*.tar.gz" | sed -n '/[2-9][5-9]/p' | sed -n 1p | sed 's/.tar.gz//g')"
+latest_release="$(curl -s https://api.github.com/repos/openwrt/openwrt/releases/latest | jq -r '.tag_name')"
 immortalwrt_repo="https://github.com/immortalwrt/immortalwrt.git"
 immortalwrt_pkg_repo="https://github.com/immortalwrt/packages.git"
 immortalwrt_luci_repo="https://github.com/immortalwrt/luci.git"
@@ -46,6 +46,8 @@ sbwfw876_repo="https://github.com/sbwml/openwrt_helloworld"
 sbw_pkg_repo="https://github.com/sbwml/openwrt_pkgs"
 natmap_repo="https://github.com/blueberry-pie-11/luci-app-natmap"
 xwrt_repo="https://github.com/QiuSimons/openwrt-natflow"
+easytier_pkg_repo="https://github.com/EasyTier/luci-app-easytier.git"
+daede_pkg_repo="https://github.com/kenzok8/openwrt-daede.git"
 
 # 开始克隆仓库，并行执行
 clone_repo $openwrt_repo $latest_release openwrt &
@@ -61,6 +63,8 @@ clone_repo $openwrt_pkg_repo master openwrt_pkg_ma &
 clone_repo $openwrt_add_repo master OpenWrt-Add &
 clone_repo $dockerman_repo master dockerman &
 clone_repo $docker_lib_repo master docker_lib &
+clone_repo $easytier_pkg_repo main easytier_pkg &
+clone_repo $daede_pkg_repo main daede_pkg &
 # 等待所有后台任务完成
 wait
 

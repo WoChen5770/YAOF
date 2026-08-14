@@ -4,10 +4,6 @@ name: OpenWrt-Matrix
 on:
   workflow_call:
     inputs:
-      targets:
-        required: true
-        type: string
-        default: ""
       upload_source:
         required: false
         type: boolean
@@ -19,11 +15,6 @@ on:
 
   workflow_dispatch:
     inputs:
-      targets:
-        description: "Select target platforms (comma separated, e.g. R2C,R2S,R3S,R4S,X86 ;leave blank for all, case-insensitive)"
-        required: false
-        type: string
-        default: ""
       upload_source:
         description: "Upload source folder before build"
         required: false
@@ -36,40 +27,7 @@ on:
         default: true
 
 jobs:
-  setup:
-    runs-on: ubuntu-24.04
-    if: github.event.repository.owner.id == github.event.sender.id
-    steps:
-      - id: set-matrix
-        shell: bash
-        run: |
-          # All possible targets
-          all_targets='[
-            {"name": "R2C", "script_dir": "R2S", "arch": "rockchip/armv8", "arch_suffix": "3328"},
-            {"name": "R2S", "script_dir": "R2S", "arch": "rockchip/armv8", "arch_suffix": "3328"},
-            {"name": "R3S", "script_dir": "R4S", "arch": "rockchip/armv8", "arch_suffix": "3566"},
-            {"name": "R4S", "script_dir": "R4S", "arch": "rockchip/armv8", "arch_suffix": "3399"},
-            {"name": "X86", "script_dir": "X86", "arch": "x86/64", "arch_suffix": ""}
-          ]'
-
-          # User selected targets
-          inputs_targets="${{ inputs.targets }}"
-          # Replace Chinese comma with English comma, convert to uppercase
-          inputs_targets=$(echo "$inputs_targets" | sed 's/，/,/g' | tr 'a-z' 'A-Z' | xargs)
-
-          if [[ -z "$inputs_targets" ]]; then
-            # If input is empty, run all targets
-            echo "matrix=$(echo "$all_targets" | jq -c '{include: .}')" >> $GITHUB_OUTPUT
-          else
-            # Filter targets based on input
-            filtered_targets=$(echo "$all_targets" | jq --arg targets "$inputs_targets" '[.[] | select(.name as $name | ($targets | split(",") | map(gsub(" "; "")) | index($name))) ]')
-            echo "matrix=$(echo "$filtered_targets" | jq -c '{include: .}')" >> $GITHUB_OUTPUT
-          fi
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-
   build:
-    needs: setup
     env: # default values, will be overridden later
       seed: dummy
       artifact_prefix: dummy
@@ -85,19 +43,21 @@ jobs:
     if: github.event.repository.owner.id == github.event.sender.id
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
+      matrix:
+        include:
+          - name: X86
+            script_dir: X86
+            arch: x86/64
     steps:
       - name: Generate platform variables and print
         id: genvars
         run: |
           # Debug: Print all input variables
-          echo "inputs.targets: '${{ inputs.targets }}'"
           echo "inputs.upload_source: '${{ inputs.upload_source }}'"
           echo "inputs.build_firmware: '${{ inputs.build_firmware }}'"
           echo "matrix.name: '${{ matrix.name }}'"
           echo "matrix.script_dir: '${{ matrix.script_dir }}'"
           echo "matrix.arch: '${{ matrix.arch }}'"
-          echo "matrix.arch_suffix: '${{ matrix.arch_suffix }}'"
           echo "github.run_id: '${{ github.run_id }}'"
 
           # Platform name in lowercase
@@ -113,15 +73,9 @@ jobs:
           sha_match="$name_lower"
 
           # ext4_zip/sfs_zip rule
-          if [ "$name_lower" = "x86" ]; then
-            ext4_zip='*ext4-combined*'
-            sfs_zip='*squashfs-combined*'
-            sysupgrade_glob='*combined-efi.img*'
-          else
-            ext4_zip="*$name_lower*ext4*"
-            sfs_zip="*$name_lower*squashfs*"
-            sysupgrade_glob='*sysupgrade.img*'
-          fi
+          ext4_zip='*ext4-combined*'
+          sfs_zip='*squashfs-combined*'
+          sysupgrade_glob='*combined-efi.img*'
 
           # workerid variable
           workerid=${{ github.run_id }}
@@ -157,7 +111,7 @@ jobs:
           remove-codeql: "true"
 
       - name: Checkout
-        uses: actions/checkout@main
+        uses: actions/checkout@v4
 
       - name: Init build dependencies
         env:
@@ -221,11 +175,8 @@ jobs:
         working-directory: ${{ github.workspace }}/openwrt
         run: |
           TARGET_DEVICE_ARCH="$(grep "^CONFIG_TARGET_.*_.*=y$" ".config" | head -n 1 | sed 's/^CONFIG_TARGET_//g' | awk -F '_' '{print $1}')"
-          if [ -n "${{ matrix.arch_suffix }}" ]; then
-            TARGET_DEVICE_ARCH="$TARGET_DEVICE_ARCH-${{ matrix.arch_suffix }}"
-          fi
           echo "TARGET_DEVICE_ARCH=$TARGET_DEVICE_ARCH" >> $GITHUB_ENV
-          latest_release="$(curl -s https://github.com/openwrt/openwrt/tags | grep -Eo "v[0-9\.]+\-*r*c*[0-9]*.tar.gz" | sed -n '/[2-9][5-9]/p' | sed -n 1p | sed 's/.tar.gz//g' | sed 's/v//g')"
+          latest_release="$(curl -s https://api.github.com/repos/openwrt/openwrt/releases/latest | jq -r '.tag_name' | sed 's/^v//')"
           echo "latest_release=${latest_release}" >> $GITHUB_ENV
 
           echo "Package folder ${{ env.openwrt_source_name }}"
@@ -268,17 +219,20 @@ jobs:
         if: inputs.build_firmware
         working-directory: ${{ github.workspace }}/openwrt
         id: compileopenwrt
-        continue-on-error: true
         run: |
+          set +e
           IGNORE_ERRORS=1 make -j$(($(nproc) + 1))
-          echo $?
+          rc=$?
+          set -e
+          echo "BUILD_EXIT_CODE=$rc" >> "$GITHUB_ENV"
+          exit $rc
       - name: If Error
-        if: steps.compileopenwrt.outcome == 'failure'
+        if: failure()
         working-directory: ${{ github.workspace }}/openwrt
         run: |
           cat ./.config
           echo '================================================================'
-          make -j1 V=s
+          make -j1 V=s || true
 
       - name: Organize files
         if: inputs.build_firmware

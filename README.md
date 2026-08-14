@@ -9,10 +9,7 @@
 <img alt="GitHub" src="https://img.shields.io/github/license/QiuSimons/YAOF?style=for-the-badge">
 <p>
 <p align="center">
-<img src="https://github.com/QiuSimons/YAOF/workflows/R2C-OpenWrt/badge.svg">
-<img src="https://github.com/QiuSimons/YAOF/workflows/R2S-OpenWrt/badge.svg">
-<img src="https://github.com/QiuSimons/YAOF/workflows/R4S-OpenWrt/badge.svg">
-<img src="https://github.com/QiuSimons/YAOF/workflows/X86-OpenWrt/badge.svg">
+<img src="https://github.com/WoChen5770/YAOF/workflows/X86-OpenWrt/badge.svg">
 <p>
 
 
@@ -21,21 +18,21 @@
 ### 特性
 
 - 基于原生 OpenWrt 25.12 编译，默认管理地址 192.168.1.1
-- 内置升级功能可用，物理 Reset 按键可用
-- 预配置了部分插件<b>(注意，使用 MosDNS 同时作为广告过滤手段及 dns 分流措施。)</b>
-- 可无脑 opkg kmod
-- R2C/R2S 核心频率 1.6（交换了 LAN WAN），R4S 核心频率 2.2/1.8（建议使用带有线损补偿的电源，死机大多数情况下，都是因为<b>你用的电源过于垃圾</b>，另外，你也可以选择使用<b>自带的 app 限制最大频率</b>，茄子 🍆）
+- 支持 LuCI 手动升级（sysupgrade），物理 Reset 按键可用
+- 预配置了部分插件
+- 可无脑 apk 安装/卸载内核模块（kmod）
+- 仅编译 x86_64 通用机型（Generic x86_64）固件
 - O2 编译，CFLAG 优化
-- 插件包含：SSRP，PassWall，OpenClash，Mihomo，DAED，微信推送，网易云解锁，SQM，DNSProxy，网络唤醒，DDNS，迅雷快鸟，UPNP，FullCone(防火墙中开启，默认开启)，流量分载，irq 优化，京东签到，Zerotier，FRPC，FRPS，无线打印，流量监控，过滤军刀，R2S-OLED
-- ss 协议在 armv8 上实现了 aes 硬件加速（请<b>仅使用 aead 加密</b>的连接方式）
-- 集成并默认启用了 BBRv3，LRNG
-- 不再集成了 Docker，Docker刚需用户请停留在23.05，要使用 Docker，请先开启“Docker-配置-自动启动”选项，并保存应用设置
-- 内置了一个一键格式化剩余空间并挂载的插件，方便 Docker 用户
+- 插件包含：PassWall、DAEDE（DAE/DAED 统一管理界面）、AdGuard Home、EasyTier、EINAT、Bandix（流量监控）、UPnP、AirConnect（AirPlay 音频投送）、ap-modem、Aurora 主题及配置、软件包管理器（apk）、定时任务、分区扩展、内存释放、微信推送、htop、coremark 等
+- 集成并默认启用了 BBRv3、LRNG
+- 内置 FullCone NAT 与 Shortcut-FE（防火墙页面可开关）；Shortcut-FE 与 nft flow offloading 请二选一启用，避免冲突
+- 未集成 Docker；需要 Docker 请自行安装或选择其他固件
+- 内置一键格式化剩余空间并挂载插件（luci-app-partexp）
 - 如有任何问题，请先尝试 ssh 进入后台，输入 fuck 后回车，等待机器重启后确认问题是否已经解决
 
 ### 下载
 
-- 选择自己<b>设备对应的固件</b>，并[下载](https://github.com/QiuSimons/R2S-R4S-OpenWrt/releases)
+- 下载 [X86-64 固件](https://github.com/WoChen5770/YAOF/releases)
 
 ### 鸣谢
 

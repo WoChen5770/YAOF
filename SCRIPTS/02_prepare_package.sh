@@ -11,9 +11,9 @@ sed -i 's/Os/O2/g' include/target.mk
 # 定义预期的内核版本
 SUPPORTED_KERNEL="6.12"
 
-current_version=$(sed -n 's/^KERNEL_PATCHVER:=//p' ./target/linux/rockchip/Makefile) # 如 6.12
+current_version=$(sed -n 's/^KERNEL_PATCHVER:=//p' ./target/linux/x86/Makefile)
 if [ -z "${current_version}" ]; then
-    echo "Error: Failed to extract KERNEL_PATCHVER from ./target/linux/rockchip/Makefile"
+    echo "Error: Failed to extract KERNEL_PATCHVER from ./target/linux/x86/Makefile"
     exit 1
 fi
 if [[ "${SUPPORTED_KERNEL}" != "${current_version}" ]]; then
@@ -57,8 +57,6 @@ rm -rf ./package/network/config/firewall4
 cp -rf ../openwrt_ma/package/network/config/firewall4 ./package/network/config/firewall4
 
 ### 必要的 Patches ###
-# Patch arm64 型号名称
-cp -rf ../PATCH/kernel/arm/* ./target/linux/generic/hack-${KERNEL_VERSION}/
 # BBRv3
 cp -rf ../PATCH/kernel/bbr3/* ./target/linux/generic/backport-${KERNEL_VERSION}/
 # LRNG
@@ -149,13 +147,14 @@ cp -rf ../PATCH/kernel/btf/* ./target/linux/generic/hack-${KERNEL_VERSION}/
 
 ### 获取额外的基础软件包 ###
 # Disable Mitigations
-sed -i 's,rootwait,rootwait mitigations=off,g' target/linux/rockchip/image/default.bootscript
 sed -i 's,@CMDLINE@ noinitrd,noinitrd mitigations=off,g' target/linux/x86/image/grub-efi.cfg
 sed -i 's,@CMDLINE@ noinitrd,noinitrd mitigations=off,g' target/linux/x86/image/grub-iso.cfg
 sed -i 's,@CMDLINE@ noinitrd,noinitrd mitigations=off,g' target/linux/x86/image/grub-pc.cfg
 
 ### ADD PKG 部分 ###
 cp -rf ../OpenWrt-Add ./package/new
+cp -rf ../easytier_pkg ./package/new/easytier_pkg
+cp -rf ../daede_pkg/luci-app-daede ./package/new/luci-app-daede
 rm -rf feeds/packages/net/{xray-core,v2ray-core,v2ray-geodata,sing-box,frp,microsocks,shadowsocks-libev,zerotier,daed}
 rm -rf feeds/luci/applications/{luci-app-frps,luci-app-frpc,luci-app-zerotier}
 rm -rf feeds/packages/utils/coremark
@@ -163,10 +162,6 @@ sed -i 's/+@KERNEL_DEBUG_INFO_BTF/+vmlinux-btf/' ./package/new/openwrt-einat-ebp
 git clone https://github.com/QiuSimons/vmlinux-btf ./package/new/vmlinux-btf
 
 ### 获取额外的 LuCI 应用、主题和依赖 ###
-# RK
-sed -i '/REQUIRE_IMAGE_METADATA/d' target/linux/rockchip/armv8/base-files/lib/upgrade/platform.sh
-wget https://github.com/coolsnowwolf/lede/raw/refs/heads/master/target/linux/rockchip/patches-6.12/991-arm64-dts-rockchip-add-more-cpu-operating-points-for.patch -O target/linux/rockchip/patches-6.12/991.patch
-wget https://github.com/coolsnowwolf/lede/raw/refs/heads/master/target/linux/rockchip/patches-6.12/992-rockchip-rk3399-overclock-to-2.2-1.8-GHz.patch -O target/linux/rockchip/patches-6.12/992.patch
 # 更换 Nodejs 版本
 rm -rf ./feeds/packages/lang/node
 rm -rf ./package/new/feeds_packages_lang_node-prebuilt
