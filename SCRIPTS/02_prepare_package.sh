@@ -153,8 +153,14 @@ sed -i 's,@CMDLINE@ noinitrd,noinitrd mitigations=off,g' target/linux/x86/image/
 
 ### ADD PKG 部分 ###
 cp -rf ../OpenWrt-Add ./package/new
+if grep -q '^CONFIG_PACKAGE_luci-app-daede=y' "../SEED/${seed:-X86}/config.seed" 2>/dev/null; then
+    # 只启用 luci-app-daede 时，移除 OpenWrt-Add 自带的 luci-app-daed，
+    # 并改用 daede 仓库配套的 daed 后端，避免依赖解析到旧包。
+    rm -rf ./package/new/luci-app-daed
+    cp -rf ../daede_pkg/luci-app-daede ./package/new/luci-app-daede
+    cp -rf ../daede_pkg/daed ./package/new/daed
+fi
 cp -rf ../easytier_pkg ./package/new/easytier_pkg
-cp -rf ../daede_pkg/luci-app-daede ./package/new/luci-app-daede
 rm -rf feeds/packages/net/{xray-core,v2ray-core,v2ray-geodata,sing-box,frp,microsocks,shadowsocks-libev,zerotier,daed}
 rm -rf feeds/luci/applications/{luci-app-frps,luci-app-frpc,luci-app-zerotier}
 rm -rf feeds/packages/utils/coremark
