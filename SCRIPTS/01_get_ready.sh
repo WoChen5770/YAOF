@@ -14,6 +14,9 @@ clone_repo() {
 
 # 定义一些变量，存储仓库地址和分支名
 latest_release="$(curl -s https://api.github.com/repos/openwrt/openwrt/releases/latest | jq -r '.tag_name')"
+if [ -z "$latest_release" ] || [ "$latest_release" = "null" ]; then
+  latest_release="openwrt-25.12"
+fi
 immortalwrt_repo="https://github.com/immortalwrt/immortalwrt.git"
 immortalwrt_pkg_repo="https://github.com/immortalwrt/packages.git"
 immortalwrt_luci_repo="https://github.com/immortalwrt/luci.git"

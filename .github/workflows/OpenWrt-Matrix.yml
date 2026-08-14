@@ -1,6 +1,10 @@
 # Reusable workflow for building OpenWrt firmware
 name: OpenWrt-Matrix
 
+permissions:
+  contents: write
+  actions: write
+
 on:
   workflow_call:
     inputs:
@@ -162,7 +166,7 @@ jobs:
       - name: Fix Permissions
         working-directory: ${{ github.workspace }}/openwrt
         run: |
-          sudo -E chmod -R 755 ./08_fix_permissions.sh
+          sudo -E chmod +x ./08_fix_permissions.sh
           /bin/bash 08_fix_permissions.sh
 
       - name: Make Config
@@ -176,7 +180,11 @@ jobs:
         run: |
           TARGET_DEVICE_ARCH="$(grep "^CONFIG_TARGET_.*_.*=y$" ".config" | head -n 1 | sed 's/^CONFIG_TARGET_//g' | awk -F '_' '{print $1}')"
           echo "TARGET_DEVICE_ARCH=$TARGET_DEVICE_ARCH" >> $GITHUB_ENV
-          latest_release="$(curl -s https://api.github.com/repos/openwrt/openwrt/releases/latest | jq -r '.tag_name' | sed 's/^v//')"
+          latest_release="$(sed -n 's/^VERSION_NUMBER:=\s*//p' include/version.mk | tr -d '[:space:]')"
+          if [ -z "$latest_release" ] || [ "$latest_release" = "SNAPSHOT" ]; then
+            latest_release="$(curl -fsSL https://api.github.com/repos/openwrt/openwrt/releases/latest 2>/dev/null | jq -r '.tag_name' 2>/dev/null | sed 's/^v//')"
+          fi
+          latest_release="${latest_release:-25.12.0}"
           echo "latest_release=${latest_release}" >> $GITHUB_ENV
 
           echo "Package folder ${{ env.openwrt_source_name }}"
@@ -224,10 +232,9 @@ jobs:
           IGNORE_ERRORS=1 make -j$(($(nproc) + 1))
           rc=$?
           set -e
-          echo "BUILD_EXIT_CODE=$rc" >> "$GITHUB_ENV"
           exit $rc
       - name: If Error
-        if: failure()
+        if: steps.compileopenwrt.outcome == 'failure'
         working-directory: ${{ github.workspace }}/openwrt
         run: |
           cat ./.config
@@ -271,10 +278,14 @@ jobs:
         run: df -h
 
       - name: Trigger badge sync for current platform
-        if: github.workflow == 'OpenWrt-Matrix' && inputs.build_firmware && steps.create_release.outcome != 'skipped' && always()
+        if: always() && inputs.build_firmware
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Triggering badge sync for ${{ matrix.name }} with status: ${{ steps.create_release.outcome }}"
+          badge_status="${{ steps.create_release.outcome }}"
+          if [ "$badge_status" != "success" ]; then
+            badge_status=failure
+          fi
+          echo "Triggering badge sync for ${{ matrix.name }} with status: $badge_status"
           gh workflow run "${{ matrix.name }}-OpenWrt.yml" \
-            --field badge_status="${{ steps.create_release.outcome }}" || echo "Failed to trigger ${{ matrix.name }} workflow"
+            --field badge_status="$badge_status" || echo "Failed to trigger ${{ matrix.name }} workflow"

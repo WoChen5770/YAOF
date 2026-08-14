@@ -22,6 +22,9 @@ on:
         default: ''
 jobs:
   build:
+    permissions:
+      contents: write
+      actions: write
     uses: ./.github/workflows/OpenWrt-Matrix.yml
     if: github.event.repository.owner.id == github.event.sender.id && inputs.badge_status == ''
     with:
