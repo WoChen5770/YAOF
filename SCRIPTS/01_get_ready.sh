@@ -9,13 +9,28 @@ clone_repo() {
   branch_name=$2
   target_dir=$3
   # 克隆仓库到目标目录，并指定分支名和深度为1
-  git clone -b $branch_name --depth 1 $repo_url $target_dir
+  git clone -b "$branch_name" --depth 1 "$repo_url" "$target_dir"
 }
 
-# 定义一些变量，存储仓库地址和分支名
-latest_release="$(curl -s https://api.github.com/repos/openwrt/openwrt/releases/latest | jq -r '.tag_name')"
-if [ -z "$latest_release" ] || [ "$latest_release" = "null" ]; then
-  latest_release="openwrt-25.12"
+# 从当前构建分支推导发行系列，并从 OpenWrt 官方下载索引解析该系列最新版本。
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=00_openwrt_release.sh
+. "${SCRIPT_DIR}/00_openwrt_release.sh"
+
+OPENWRT_RELEASE_SERIES="$(detect_openwrt_release_series)" || exit 1
+export OPENWRT_RELEASE_SERIES
+OPENWRT_RELEASE="$(resolve_openwrt_release)" || exit 1
+export OPENWRT_RELEASE
+latest_release="v${OPENWRT_RELEASE}"
+stable_branch="openwrt-${OPENWRT_RELEASE_SERIES}"
+
+echo "Using OpenWrt release ${OPENWRT_RELEASE} (series ${OPENWRT_RELEASE_SERIES})"
+if [ -n "${GITHUB_ENV:-}" ]; then
+  {
+    echo "OPENWRT_RELEASE_SERIES=${OPENWRT_RELEASE_SERIES}"
+    echo "OPENWRT_RELEASE=${OPENWRT_RELEASE}"
+    echo "latest_release=${OPENWRT_RELEASE}"
+  } >>"${GITHUB_ENV}"
 fi
 immortalwrt_repo="https://github.com/immortalwrt/immortalwrt.git"
 immortalwrt_pkg_repo="https://github.com/immortalwrt/packages.git"
@@ -53,9 +68,9 @@ easytier_pkg_repo="https://github.com/EasyTier/luci-app-easytier.git"
 daede_pkg_repo="https://github.com/kenzok8/openwrt-daede.git"
 
 # 开始克隆仓库，并行执行
-clone_repo $openwrt_repo $latest_release openwrt &
+clone_repo "$openwrt_repo" "$latest_release" openwrt &
 #clone_repo $openwrt_repo openwrt-25.12 openwrt &
-clone_repo $openwrt_repo openwrt-25.12 openwrt_snap &
+clone_repo "$openwrt_repo" "$stable_branch" openwrt_snap &
 clone_repo $immortalwrt_repo openwrt-24.10 immortalwrt_24 &
 clone_repo $immortalwrt_repo openwrt-23.05 immortalwrt_23 &
 

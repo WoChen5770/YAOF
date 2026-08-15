@@ -173,12 +173,13 @@ jobs:
         run: |
           TARGET_DEVICE_ARCH="$(grep "^CONFIG_TARGET_.*_.*=y$" ".config" | head -n 1 | sed 's/^CONFIG_TARGET_//g' | awk -F '_' '{print $1}')"
           echo "TARGET_DEVICE_ARCH=$TARGET_DEVICE_ARCH" >> $GITHUB_ENV
-          latest_release="$(awk -F= '/^CONFIG_VERSION_NUMBER=/{v=$2} END{gsub(/"/, "", v); print v}' .config | tr -d '[:space:]')"
-          if [ -z "$latest_release" ] || [ "$latest_release" = "SNAPSHOT" ]; then
-            latest_release="$(curl -fsSL https://api.github.com/repos/openwrt/openwrt/releases/latest 2>/dev/null | jq -r '.tag_name' 2>/dev/null | sed 's/^v//')"
+          latest_release="${OPENWRT_RELEASE:-}"
+          if [ -z "$latest_release" ]; then
+            # shellcheck source=/dev/null
+            . ./00_openwrt_release.sh
+            latest_release="$(resolve_openwrt_release)"
           fi
-          latest_release="${latest_release:-25.12.0}"
-          echo "latest_release=${latest_release}" >> $GITHUB_ENV
+          echo "latest_release=${latest_release}" >> "$GITHUB_ENV"
 
           echo "Package folder ${{ env.openwrt_source_name }}"
           cd ..
@@ -275,7 +276,7 @@ jobs:
           allowUpdates: true
           prerelease: false
           tag: ${{ env.latest_release }}
-          commit: "25.12"
+          commit: ${{ github.sha }}
           replacesArtifacts: true
           token: ${{ secrets.GITHUB_TOKEN }}
           artifacts: ./artifact/*.img.gz

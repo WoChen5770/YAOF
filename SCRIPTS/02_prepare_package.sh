@@ -6,6 +6,11 @@ clear 2>/dev/null || true
 sed -i 's/Os/O2/g' include/target.mk
 # 更新 Feeds
 ./scripts/feeds update -a
+# 先移除默认的 luci-app-dockerman / luci-lib-docker，避免首次 install -a
+# 在依赖尚未安装时产生 "has a dependency on 'luci-lib-docker'" 警告。
+# 自定义版本会在下方 "Docker 容器" 部分重新放入 feeds。
+rm -rf ./feeds/luci/applications/luci-app-dockerman
+rm -rf ./feeds/luci/collections/luci-lib-docker
 ./scripts/feeds install -a
 
 # 定义预期的内核版本
