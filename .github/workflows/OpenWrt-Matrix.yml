@@ -36,8 +36,6 @@ jobs:
       seed: dummy
       artifact_prefix: dummy
       sha_match: dummy
-      ext4_zip: dummy
-      sfs_zip: dummy
       sysupgrade_glob: dummy
       openwrt_source_name: dummy
       TARGET_DEVICE_ARCH: dummy
@@ -76,9 +74,6 @@ jobs:
           # sha_match rule
           sha_match="$name_lower"
 
-          # ext4_zip/sfs_zip rule
-          ext4_zip='*ext4-combined*'
-          sfs_zip='*squashfs-combined*'
           sysupgrade_glob='*combined-efi.img*'
 
           # workerid variable
@@ -91,8 +86,6 @@ jobs:
           seed=$seed
           artifact_prefix=$artifact_prefix
           sha_match=$sha_match
-          ext4_zip=$ext4_zip
-          sfs_zip=$sfs_zip
           sysupgrade_glob=$sysupgrade_glob
           openwrt_source_name=$openwrt_source_name
           EOF
@@ -271,8 +264,6 @@ jobs:
           gzip --best *.img
           ls -Ahl
           sha256sum openwrt*${{ env.sha_match }}* | tee ${{ env.artifact_prefix }}-$(date +%Y-%m-%d)-${{ env.latest_release }}.sha256sum
-          zip ${{ env.artifact_prefix }}-$(date +%Y-%m-%d)-${{ env.latest_release }}-ext4.zip ${{ env.ext4_zip }}
-          zip ${{ env.artifact_prefix }}-$(date +%Y-%m-%d)-${{ env.latest_release }}-sfs.zip ${{ env.sfs_zip }}
           ls -Ahl
 
       - name: Create release
@@ -287,7 +278,7 @@ jobs:
           commit: "25.12"
           replacesArtifacts: true
           token: ${{ secrets.GITHUB_TOKEN }}
-          artifacts: ./artifact/*.zip
+          artifacts: ./artifact/*.img.gz
 
       - name: Print Disk Space After
         run: df -h
