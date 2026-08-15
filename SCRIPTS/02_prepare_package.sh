@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 clear
 
 ### 基础部分 ###
@@ -153,6 +154,11 @@ sed -i 's,@CMDLINE@ noinitrd,noinitrd mitigations=off,g' target/linux/x86/image/
 
 ### ADD PKG 部分 ###
 cp -rf ../OpenWrt-Add ./package/new
+# 移除未使用且重复定义（OpenWrt-mihomo 与 openwrt_helloworld 各有一份）
+# 的 mihomo 包，消除 Kconfig 递归依赖警告。
+rm -rf ./package/new/OpenWrt-mihomo
+rm -rf ./package/new/openwrt_helloworld/mihomo-alpha
+rm -rf ./package/new/openwrt_helloworld/mihomo-meta
 if grep -q '^CONFIG_PACKAGE_luci-app-daede=y' "../SEED/${seed:-X86}/config.seed" 2>/dev/null; then
     # 只启用 luci-app-daede 时，移除 OpenWrt-Add 自带的 luci-app-daed，
     # 并改用 daede 仓库配套的 daed 后端，避免依赖解析到旧包。
