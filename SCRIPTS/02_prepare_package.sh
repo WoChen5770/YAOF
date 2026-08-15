@@ -1,6 +1,6 @@
 #!/bin/bash
 set -euo pipefail
-clear
+clear 2>/dev/null || true
 
 ### 基础部分 ###
 # 使用 O2 级别的优化
