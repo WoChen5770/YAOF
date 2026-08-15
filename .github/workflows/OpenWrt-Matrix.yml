@@ -243,7 +243,10 @@ jobs:
           set +e
           IGNORE_ERRORS=1 make -j$(($(nproc) + 1))
           rc=$?
-          set -e
+          if [ $rc -ne 0 ]; then
+            echo "===== verbose retry ====="
+            make -j1 V=s 2>&1 | tail -400 || true
+          fi
           exit $rc
       - name: If Error
         if: steps.compileopenwrt.outcome == 'failure'
