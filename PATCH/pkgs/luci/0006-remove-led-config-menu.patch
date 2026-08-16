@@ -1,0 +1,32 @@
+--- a/feeds/luci/modules/luci-mod-system/root/usr/share/luci/menu.d/luci-mod-system.json
++++ b/feeds/luci/modules/luci-mod-system/root/usr/share/luci/menu.d/luci-mod-system.json
+@@ -122,18 +122,6 @@
+ 		}
+ 	},
+ 
+-	"admin/system/leds": {
+-		"title": "LED Configuration",
+-		"order": 60,
+-		"action": {
+-			"type": "view",
+-			"path": "system/leds"
+-		},
+-		"depends": {
+-			"acl": [ "luci-mod-system-config" ],
+-			"fs": { "/sys/class/leds": "directory" }
+-		}
+-	},
+ 
+ 	"admin/system/flash": {
+ 		"title": "Backup / Flash Firmware",
+*** Add File: PATCH/files/etc/uci-defaults/98-enable-https
+#!/bin/sh
+
+# 配合 luci-nginx，默认启用 HTTPS（自签证书，80 端口跳转 443）
+[ -f /etc/config/nginx ] || exit 0
+
+uci -q set nginx.global.uci_enable='true'
+uci -q set nginx._lan.uci_manage_ssl='self-signed'
+uci -q commit nginx
+
+exit 0

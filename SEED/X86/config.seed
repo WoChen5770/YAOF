@@ -89,10 +89,10 @@ CONFIG_PACKAGE_luci-compat=y
 
 ### APPLICATION ###
 CONFIG_PACKAGE_luci-app-ap-modem=y
-CONFIG_PACKAGE_luci-proto-wireguard=y
+# CONFIG_PACKAGE_luci-proto-wireguard is not set
 CONFIG_PACKAGE_qrencode=y
 CONFIG_PACKAGE_luci-app-aurora-config=y
-CONFIG_PACKAGE_luci-app-taskplan=y
+# CONFIG_PACKAGE_luci-app-taskplan is not set
 CONFIG_PACKAGE_luci-app-partexp=y
 CONFIG_PACKAGE_luci-app-airconnect=y
 CONFIG_PACKAGE_luci-app-package-manager=y
@@ -106,6 +106,9 @@ CONFIG_PACKAGE_kmod-shortcut-fe-cm=y
 CONFIG_PACKAGE_kmod-fast-classifier=y
 # CONFIG_PACKAGE_natflow-boot=y
 CONFIG_PACKAGE_luci-app-bandix=y
+
+### SSH ###
+CONFIG_PACKAGE_openssh-sftp-server=y
 
 ### ADGUARD HOME ###
 CONFIG_PACKAGE_adguardhome=y

@@ -13,6 +13,12 @@ rm -rf ./feeds/luci/applications/luci-app-dockerman
 rm -rf ./feeds/luci/collections/luci-lib-docker
 ./scripts/feeds install -a
 
+### 精简 LuCI 菜单（LED 配置） ###
+patch -p1 < ../PATCH/pkgs/luci/0006-remove-led-config-menu.patch
+
+### 默认 LAN IP ###
+sed -i 's/192.168.1.1/192.168.123.1/g' package/base-files/files/bin/config_generate
+
 # 定义预期的内核版本
 SUPPORTED_KERNEL="6.12"
 
@@ -82,8 +88,6 @@ echo '
 CONFIG_NETKIT=y
 CONFIG_IPV6_MULTIPLE_TABLES=y
 ' >>./target/linux/generic/config-${KERNEL_VERSION}
-# wg
-cp -rf ../PATCH/kernel/wg/* ./target/linux/generic/hack-${KERNEL_VERSION}/
 # dont wrongly interpret first-time data
 echo "net.netfilter.nf_conntrack_tcp_max_retrans=5" >>./package/kernel/linux/files/sysctl-nf-conntrack.conf
 # OTHERS
