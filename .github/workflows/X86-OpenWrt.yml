@@ -1,8 +1,9 @@
 name: X86-OpenWrt
 
 on:
-#  schedule:
-#    - cron: 5 6 * * 0
+  schedule:
+    # 每 7 天自动构建一次：周五 08:00（北京时间）= 周五 00:00 UTC
+    - cron: '0 0 * * 5'
   workflow_dispatch:
     inputs:
       upload_source:
@@ -26,7 +27,7 @@ jobs:
       contents: write
       actions: write
     uses: ./.github/workflows/OpenWrt-Matrix.yml
-    if: github.event.repository.owner.id == github.event.sender.id && inputs.badge_status == ''
+    if: inputs.badge_status == '' && (github.event_name == 'schedule' || github.event.repository.owner.id == github.event.sender.id)
     with:
       upload_source: ${{ github.event_name == 'workflow_dispatch' && inputs.upload_source }}
       build_firmware: ${{ (github.event_name == 'workflow_dispatch' && inputs.build_firmware) || github.event_name != 'workflow_dispatch' }}
